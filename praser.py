@@ -11,13 +11,14 @@ FILE_NAME = str(sys.argv[1])
 symbols_mark = [
     {'key': '草', 'symbols': ['草']},
     {'key': '?', 'symbols': ['?', '？']},
-    {'key': 'kksk', 'symbols': ['kksk']},
+    {'key': 'kksk/awsl', 'symbols': ['kksk', 'awsl']},
+    {'key': 'anti', 'symbols': ['anti']}
 ]
 
 
 def symbol_in_message(symbols, msg):
     for symbol in symbols:
-        if symbol in msg:
+        if symbol in msg.lower():
             return True
     return False
 
@@ -33,12 +34,15 @@ for symbol_mark in symbols_mark:
     df[symbol_mark.get('key')] = df['text'].apply(lambda msg: symbol_in_message(symbol_mark.get('symbols'), msg))
     has_symbol_df = df[df[symbol_mark.get('key')]]
     symbol_final = has_symbol_df.groupby(pd.Grouper(key='time', freq='60s')).count()
-    concat_list.append(symbol_final[symbol_mark.get('key')])
+    if len(symbol_final) > 0:
+        concat_list.append(symbol_final[symbol_mark.get('key')])
 
 final = pd.concat(concat_list, axis=1)
-
+final.index = final.index.format(formatter=lambda x: x.strftime('%H:%M'))
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     print(final)
-final.plot()
+ax = final.plot()
+ax.set_xticklabels(list(final.index[::5]))
+ax.set_xticks(range(0, final.index.size, 5))
 plt.show()
 _ = input()
